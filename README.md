@@ -10,4 +10,4 @@ Su utilización es totalmente gratuita, y constituye una gran herramienta para c
 # Este repositorio
 Este repositorio no contiene el código del juego, sólo los archivos para que funcione su versión WebGL. Su función es permitir la utilización del juego online mediante Github Pages.
 
-Visita https://edaddepiedrahaedo.github.io/objectiflascaux/ para ver el juego y https://https://sites.google.com/view/edaddepiedrahaedo/objectiflascaux para descargar su ejecutable.
+Visita https://edaddepiedrahaedo.github.io/objectiflascaux/ para ver el juego y https://sites.google.com/view/edaddepiedrahaedo/objectiflascaux para descargar su ejecutable.
