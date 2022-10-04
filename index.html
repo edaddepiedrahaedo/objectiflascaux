@@ -3,25 +3,174 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Objectif Lascaux</title>
+    <title>Objectif Lascaux - David Pérez Esteban</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
-    <script src="TemplateData/UnityProgress.js"></script>  
-    <script src="Build/UnityLoader.js"></script>
-    <script>
-      var gameInstance = UnityLoader.instantiate("gameContainer", "Build/Build.json", {onProgress: UnityProgress});
-    </script>
   </head>
   <body style="width:100%; padding-top: 56.25%; overflow: hidden;">
-    <div class="webgl-content" style="width:100%; height: 100%;">
-      <div id="gameContainer" style="width: 100%; height: calc(100% - 48px);"></div>
-      <div id="footer" class="footer">
-        <div class="webgl-logo"></div>
-        <div class="fullscreen" onclick="gameInstance.SetFullscreen(1)"></div>
-        <div class="title">Objectif Lascaux</div>
+    <div id="unity-container" class="unity-desktop" style="width:100%; height: 100%;">
+      <canvas id="unity-canvas"></canvas>
+      <div id="unity-loading-bar">
+        <div id="unity-logo"></div>
+        <div id="unity-progress-bar-empty">
+          <div id="unity-progress-bar-full"></div>
+        </div>
       </div>
-      <script>this.top.location !== this.location && (document.getElementById("gameContainer").style.height="100%");</script><!-- Expands the game container to the full height of the container if working inside an iframe -->
-      <script>this.top.location !== this.location && (document.getElementById("footer").style.display="none");</script><!-- Hides the footer toolbar if working inside an iframe -->
+      <div id="unity-warning"> </div>
+      <div id="unity-message">
+		<p><b><u>Privacité / Privacidad</u></b><br/>
+		Cette application collecte anonymement le nombre d'utilisateurs et les réponses soumises dans le jeu. Vous pouvez demander la suppression et l'exclusion de ces données dans le menu des options du jeu.<br/>
+		Esta aplicación recopila de forma anónima el número de usuarios y las respuestas enviadas en el juego. Se puede solicitar la eliminación y exclusión de estos datos en el menú de opciones del juego.<br/>
+		<p><b><u>Crédits / Créditos</u></b><br/><ul>
+		<li><b>Jeu / Juego:</b> David Pérez Esteban, Enrique Maíllo Delgado</li>
+
+		<li><b>Avec la collaboration de / Con la colaboración de:</b> Celia Barba, Sara Blanco, Eloy Calvo, Aurora Faúndez, Silvia Fernández, Sergio Fernández, Carla Frades, Nayara González, Roberto Panero, Clara Ramos.</li>
+
+		<li><b>Direction du projet / Dirección del proyecto:</b> Enrique Maíllo Delgado</li>
+		<li><b>Coordination du projet / Coordinación del proyecto:</b> David Pérez Esteban</li>
+		
+		<li>IES Maestro Haedo, Zamora (España), 2016-2017</li>
+		</ul></p>
+		<div id="unity-message-close"></div>
+	  </div>
+      <div id="unity-footer">
+        <div id="unity-webgl-logo"></div>
+        <div id="unity-fullscreen-button"></div>
+        <div id="unity-help-button"></div>
+        <div id="unity-build-title">Objectif Lascaux</div>
+      </div>
     </div>
+	<script>this.top.location !== this.location && (document.getElementById("unity-canvas").style.height="100%");</script><!-- Expands the game container to the full height of the container if working inside an iframe -->
+	<script>this.top.location !== this.location && (document.getElementById("unity-footer").style.display="none");</script><!-- Hides the footer toolbar if working inside an iframe -->
+    <script>
+	  var helpButton = document.querySelector("#unity-help-button");
+	  var messageCloseButton = document.querySelector("#unity-message-close");
+	  var messageBanner = document.querySelector("#unity-message");
+      helpButton.onclick = () => {
+        messageBanner.style.display = "block";
+      };
+	  messageCloseButton.onclick = () => {
+        messageBanner.style.display = "none";
+      };
+	</script>
+	<script>
+      var container = document.querySelector("#unity-container");
+      var canvas = document.querySelector("#unity-canvas");
+      var loadingBar = document.querySelector("#unity-loading-bar");
+      var progressBarFull = document.querySelector("#unity-progress-bar-full");
+      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+      var warningBanner = document.querySelector("#unity-warning");
+      
+	  var UnityInstance = null;
+	  
+      // Shows a temporary message banner/ribbon for a few seconds, or
+      // a permanent error message on top of the canvas if type=='error'.
+      // If type=='warning', a yellow highlight color is used.
+      // Modify or remove this function to customize the visually presented
+      // way that non-critical warnings and error messages are presented to the
+      // user.
+      function unityShowBanner(msg, type, duration) {
+        function updateBannerVisibility() {
+          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+        }
+        var div = document.createElement('div');
+        div.innerHTML = msg;
+        warningBanner.appendChild(div);
+        if (type == 'error') div.style = 'background: red; padding: 10px;';
+        else {
+          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+          setTimeout(function() {
+            warningBanner.removeChild(div);
+            updateBannerVisibility();
+          }, duration === undefined ? 5000 : duration);
+        }
+        updateBannerVisibility();
+      }
+
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/Build.loader.js";
+      var config = {
+        dataUrl: buildUrl + "/Build.data.unityweb",
+        frameworkUrl: buildUrl + "/Build.framework.js.unityweb",
+        codeUrl: buildUrl + "/Build.wasm.unityweb",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "David Pérez Esteban",
+        productName: "Objectif Lascaux",
+        productVersion: "1.2",
+        showBanner: unityShowBanner,
+      };
+
+      // By default Unity keeps WebGL canvas render target size matched with
+      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
+      // Set this to false if you want to decouple this synchronization from
+      // happening inside the engine, and you would instead like to size up
+      // the canvas DOM size and WebGL render target sizes yourself.
+      // config.matchWebGLToCanvasSize = false;
+
+      if (/Android/i.test(navigator.userAgent)) {
+        // Mobile device style: fill the whole browser client area with the game canvas:
+
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        document.getElementsByTagName('head')[0].appendChild(meta);
+        container.className = "unity-mobile";
+        canvas.className = "unity-mobile";
+
+        // To lower canvas resolution on mobile devices to gain some
+        // performance, uncomment the following line:
+        // config.devicePixelRatio = 1;
+        unityShowBanner('<div style="white-space: pre-wrap; text-align: center;">Il existe une application spécifique pour Android.\nNous vous recommandons fortement de l\'utiliser à la place de cette version.\n\nExiste una aplicación específica para Android.\nTe recomendamos encarecidamente utilizarla en lugar de esta versión.\n\n<a href="https://play.google.com/store/apps/details?id=com.DavidPerezEsteban.ObjectifLascaux">Télécharger l\'app d\'Android / Descargar la app de Android</a></div>','',15000);
+      } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        // Mobile device style: fill the whole browser client area with the game canvas:
+
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        document.getElementsByTagName('head')[0].appendChild(meta);
+        container.className = "unity-mobile";
+        canvas.className = "unity-mobile";
+
+        // To lower canvas resolution on mobile devices to gain some
+        // performance, uncomment the following line:
+        // config.devicePixelRatio = 1;
+        unityShowBanner('<div style="white-space: pre-wrap; text-align: center;">Cette application n\'est pas encore optimisée pour iOS.\nUn plantage peut se produire.\n\nEsta aplicación aún no está optimizada para iOS.\nPodrían ocurrir fallos o bloqueos.</div>','',15000);
+      } else {
+        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
+
+        //canvas.style.width = "1366px";
+        //canvas.style.height = "768px";
+      }
+      //-----RESPONSIVE + IFRAME-----
+      canvas.style.width = "100%";
+      if (this.top.location == this.location) {
+            canvas.style.height = "calc(100% - 48px)";
+			document.querySelector("#unity-footer").style.display = "";
+      } else {
+            canvas.style.height = "100%";
+			document.querySelector("#unity-footer").style.display = "none";
+      }
+      //-----------------------------
+      //canvas.style.background = "url('" + buildUrl + "/Build.jpg.unityweb') center / cover";
+      canvas.style.background = "url('" + "TemplateData" + "/background_jd.png') center / cover";
+      loadingBar.style.display = "block";
+
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          progressBarFull.style.width = 100 * progress + "%";
+        }).then((unityInstance) => {
+          loadingBar.style.display = "none";
+          fullscreenButton.onclick = () => {
+            unityInstance.SetFullscreen(1);
+          };
+		  UnityInstance = unityInstance;
+        }).catch((message) => {
+          alert(message);
+        });
+      };
+      document.body.appendChild(script);
+    </script>
   </body>
 </html>
